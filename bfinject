@@ -99,6 +99,8 @@ function clean_up {
         rm -rf "$DYLIB_DIR" >/dev/null 2>&1
     fi
     rm -f "$RANDOM_NAME" > /dev/null 2>&1
+    rm -f /usr/bin/bfinject4realz > /dev/null 2>&1
+    rm -f /usr/bin/jtool.liberios > /dev/null 2>&1
     rm -f /bootstrap/usr/local/bin/bfinject4realz > /dev/null 2>&1
     rm -f /bootstrap/usr/local/bin/jtool.liberios > /dev/null 2>&1
 }
@@ -130,9 +132,18 @@ fi
 #
 # Detect LiberiOS vs Electra
 #
-if [ -f /bootstrap/inject_criticald ]; then
+if [ -f /electra/inject_criticald ]; then
     # This is Electra
     echo "[+] Electra detected."
+    cp jtool.liberios /usr/bin/
+    chmod +x /usr/bin/jtool.liberios
+    JTOOL=/usr/bin/jtool.liberios
+    cp bfinject4realz /usr/bin/
+    INJECTOR=/usr/bin/bfinject4realz
+    ISELECTRA=1
+elif [ -f /bootstrap/inject_criticald ]; then
+    # This is Electra Beta
+    echo "[+] Electra Beta detected."
     cp jtool.liberios /bootstrap/usr/local/bin/
     chmod +x /bootstrap/usr/local/bin/jtool.liberios
     JTOOL=/bootstrap/usr/local/bin/jtool.liberios
@@ -159,9 +170,15 @@ for DYLIB in ${DYLIBS[@]}; do
         exit 1
     fi
     
+    MD5PATH="md5"
+
+    if [ "$ISELECTRA" == "1" ]; then
+        MD5PATH="md5sum"
+    fi
+
     # Use random filenames to avoid cached binaries causing "Killed: 9" messages.
-    RAND=`dd if=/dev/random bs=1 count=16 2>/dev/null | md5`
-    RANDOM_NAME="${INJECTOR%/*}/`dd if=/dev/random bs=1 count=16 2>/dev/null | md5`"
+    RAND=`dd if=/dev/random bs=1 count=16 2>/dev/null | ${MD5PATH}`
+    RANDOM_NAME="${INJECTOR%/*}/`dd if=/dev/random bs=1 count=16 2>/dev/null | ${MD5PATH}`"
     DYLIB_DIR="/System/Library/Frameworks/${RAND}.framework"
     DYLIB_PATH="$DYLIB_DIR/$RAND.dylib"
 
